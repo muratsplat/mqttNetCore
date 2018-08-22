@@ -4,18 +4,19 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using System.Text;
 using System.Threading.Tasks;
+using DotNetEnv;
+
 
 
 namespace QttWebHook
 {
     class Program
     {
+
+        static Config.Model Conf = new Config.Provider().FromENV();
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-        
             Run();
-            
         }
 
 
@@ -24,8 +25,7 @@ namespace QttWebHook
             // Configure MQTT server.
             var optionsBuilder = new MqttServerOptionsBuilder()
                 .WithConnectionBacklog(100)
-                .WithDefaultEndpointPort(1884);
-
+                .WithDefaultEndpointPort(Conf.Port);
             var options = new MqttServerOptions();
             options.ConnectionValidator = c => 
             {
@@ -36,13 +36,13 @@ namespace QttWebHook
                 // }
 
                 // TODO: Adds WebHook to auth
-                if (c.Username != "user")
+                if (c.Username != Conf.DefaultUser)
                 {
                     c.ReturnCode = MqttConnectReturnCode.ConnectionRefusedBadUsernameOrPassword;
                     return;
                 }
 
-                if (c.Password != "secret")
+                if (c.Password != Conf.DefaultPass)
                 {
                     c.ReturnCode = MqttConnectReturnCode.ConnectionRefusedBadUsernameOrPassword;
                     return;
@@ -70,10 +70,7 @@ namespace QttWebHook
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
             await mqttServer.StopAsync();
-        }
-
-
-       
+        }       
 
     }    
 }
