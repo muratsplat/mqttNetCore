@@ -4,30 +4,33 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using System.Text;
 using System.Threading.Tasks;
-
+using DotNetEnv;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace QttWebHook
 {
     class Program
     {
+        static ILogger _logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(theme: AnsiConsoleTheme.Code)
+                .CreateLogger();
+        static Config.Model Conf = new Config.Provider(_logger).FromENV();
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-        
-            Run();
-            
+            Task<bool> server =  Run();
+            server.Wait();
         }
 
-
-        public static async void Run() {
+        public static async Task<bool> Run() {
                           // Configure MQTT server.
             // Configure MQTT server.
             var optionsBuilder = new MqttServerOptionsBuilder()
                 .WithConnectionBacklog(100)
-                .WithDefaultEndpointPort(1884);
-
+                .WithDefaultEndpointPort(Conf.Port);
             var options = new MqttServerOptions();
-            options.ConnectionValidator = c => 
+            options.ConnectionValidator = c =>
             {
                 // if (c.ClientId.Length  10)
                 // {
@@ -36,13 +39,13 @@ namespace QttWebHook
                 // }
 
                 // TODO: Adds WebHook to auth
-                if (c.Username != "user")
+                if (c.Username != Conf.DefaultUser)
                 {
                     c.ReturnCode = MqttConnectReturnCode.ConnectionRefusedBadUsernameOrPassword;
                     return;
                 }
 
-                if (c.Password != "secret")
+                if (c.Password != Conf.DefaultPass)
                 {
                     c.ReturnCode = MqttConnectReturnCode.ConnectionRefusedBadUsernameOrPassword;
                     return;
@@ -70,10 +73,10 @@ namespace QttWebHook
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
             await mqttServer.StopAsync();
-        }
 
-
-       
+            return true;
+    
+        }       
 
     }    
 }
