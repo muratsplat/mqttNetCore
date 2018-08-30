@@ -5,29 +5,32 @@ using MQTTnet.Protocol;
 using System.Text;
 using System.Threading.Tasks;
 using DotNetEnv;
-
-
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace QttWebHook
 {
     class Program
     {
-
-        static Config.Model Conf = new Config.Provider().FromENV();
+        static ILogger _logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(theme: AnsiConsoleTheme.Code)
+                .CreateLogger();
+        static Config.Model Conf = new Config.Provider(_logger).FromENV();
         static void Main(string[] args)
         {
-            Run();
+            Task<bool> server =  Run();
+            server.Wait();
         }
 
-
-        public static async void Run() {
+        public static async Task<bool> Run() {
                           // Configure MQTT server.
             // Configure MQTT server.
             var optionsBuilder = new MqttServerOptionsBuilder()
                 .WithConnectionBacklog(100)
                 .WithDefaultEndpointPort(Conf.Port);
             var options = new MqttServerOptions();
-            options.ConnectionValidator = c => 
+            options.ConnectionValidator = c =>
             {
                 // if (c.ClientId.Length  10)
                 // {
@@ -70,6 +73,9 @@ namespace QttWebHook
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
             await mqttServer.StopAsync();
+
+            return true;
+    
         }       
 
     }    
